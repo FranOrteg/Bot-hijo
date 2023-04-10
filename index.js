@@ -1,8 +1,9 @@
 const express = require('express');
 const axios = require('axios').default;
+const googleTTS = require('google-tts-api');
+const { chatGPT } = require('./utils');
 const { Telegraf } = require('telegraf');
 const { Configuration, OpenAIApi } = require("openai");
-const { chatGPT } = require('./utils');
 
 // Config .env
 require('dotenv').config();
@@ -55,10 +56,18 @@ bot.command('receta', async ctx => {
     try {
         const titulo = await chatGPT(`Dame el titulo de una receta que pueda cocinar con los siguientes ingredientes: ${ingredientes}`);
 
-        const elaboracion = await chatGPT(`Dame la elaboración para la receta con este título: ${titulo}`)
+        const elaboracion = await chatGPT(`Dame la elaboración para la receta con este título: ${titulo}`);
 
-        ctx.reply(titulo);
-        ctx.reply(elaboracion);
+        // Transformar el titulo a Audio
+        const audioUrl = googleTTS.getAudioUrl(titulo, {
+            lang: 'es',
+            slow: false,
+            host: 'https://translate.google.es'
+        });
+
+        await ctx.reply(titulo);
+        await ctx.replyWithAudio(audioUrl)
+        await ctx.reply(elaboracion);
     } catch (error) {
         ctx.reply('No puedo responderte en estos momentos, intentalo de nuevo mas tarde');
     }
